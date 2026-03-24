@@ -31,9 +31,10 @@ Students are expected to implement the intellectually central parts of the proje
 
 Replace this section with your team members and high-level responsibilities.
 
-- Name 1: role
+- Shahin Alakparov: math-utils and softmax regression coder.
 - Name 2: role
 - Name 3: role
+- Name 4: role 
 
 ## Suggested Repository Layout
 
