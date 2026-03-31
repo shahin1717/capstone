@@ -150,24 +150,29 @@ class Tensor:
     def shape(self):
         return self.data.shape
 
-    def backward(self,):
-        nodes = [self]
-        visited = set()
+    def backward(self):
         graph = []
+        visited = set()
+        added_to_graph = set()
+        stack = [self]
 
-        while nodes:
-            node = nodes.pop()
-            if node in visited:
-                continue
-
-            graph.append(node)
-            visited.add(node)
+        while stack:
+            node = stack[-1]
             
-            for child in node.children:
-                nodes.append(child)
+            if node not in visited:
+                visited.add(node)
+                for child in node.children:
+                    if child not in visited:
+                        stack.append(child)
+            else:
+                node = stack.pop()
+                if node not in added_to_graph:
+                    graph.append(node)
+                    added_to_graph.add(node)
         
-        self.grad = np.ones_like((self.grad))
-        for node in graph:
+        self.grad = np.ones_like(self.grad)
+        
+        for node in reversed(graph):
             node.partial_diff()
 
 
