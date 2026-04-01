@@ -20,7 +20,7 @@ class SoftmaxRegression:
     def predict(self, X):
         P = self.forward(X)
         return np.argmax(P, axis=1)
-
+    
     # Used by optimizer to get and set parameters
     def parameters(self):
         return [self.W, self.b]
