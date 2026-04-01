@@ -124,7 +124,7 @@ for item in models_to_run:
     print("="*50)
     
     print(f"\n[1] Gradient Checking - {name}")
-    grad_check(model, x_val_lg[:5], y_val_lg[:5], num_classes, eps=1e-3)
+    grad_check(model, x_val_lg[:10], y_val_lg[:10], num_classes, eps=1e-3)
     
     print(f"\n[2] Training Few Batches - {name}")
     train_few_batches(model, opt, x_train_lg, y_train_lg, num_classes, name)
