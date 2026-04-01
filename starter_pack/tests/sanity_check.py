@@ -108,7 +108,7 @@ models_to_run = [
         "lr": cfg.MOMENTUM_LR
     },
     {
-        "name": "LinearNetwork",
+        "name": "LinearModel",
         "model": Linear(x_train_lg.shape[1], cfg.CAPACITY_WIDTHS[0], num_classes),
         "lr": cfg.MOMENTUM_LR
     }
