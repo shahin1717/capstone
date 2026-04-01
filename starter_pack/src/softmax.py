@@ -2,12 +2,12 @@ import numpy as np
 from lite_torch import Tensor
 
 class SoftmaxRegression:
-    def __init__(self, input_dim, hidden_dim, seed: int = 0):
+    def __init__(self, input_dim, target_dim, seed: int = 0):
         rng = np.random.default_rng(seed)
         
         scale = 1.0 / np.sqrt(input_dim)
-        W = rng.uniform(-scale, scale, size=(input_dim, hidden_dim))
-        b = np.zeros((1, hidden_dim), dtype=np.float64)
+        W = rng.uniform(-scale, scale, size=(input_dim, target_dim))
+        b = np.zeros((1, target_dim), dtype=np.float64)
  
         self.W = Tensor(W)
         self.b = Tensor(b)
