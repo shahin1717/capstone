@@ -8,11 +8,21 @@ from lite_torch import Tensor
 from softmax import SoftmaxRegression
 from neural_network import Linear
 from data_loader import load_moons
-from math_utils import one_hot
+from onehot import one_hot
 from optimizers import MomentumOptimizer
 from config import Config as cfg
 
+
+
 def grad_check(model, x, y, num_classes, eps=1e-6):
+    """
+    @brief Perform gradient checking on the model's parameters using a small subset of data.
+    @param model The model to check.
+    @param x Input data (numpy array).
+    @param y True labels (numpy array).
+    @param num_classes Number of classes for one-hot encoding.
+    @param eps Perturbation value for numerical gradient approximation.
+    """    
     x_t = Tensor(x)
     y_t = Tensor(one_hot(y, num_classes))
     out = model(x_t)
@@ -49,8 +59,19 @@ def grad_check(model, x, y, num_classes, eps=1e-6):
         print("Grad check passed.")
     else:
         print("WARNING: Grad check failed.")
+        
 
 def train_few_batches(model, optimizer, x_train, y_train, num_classes, model_name):
+    """
+    @brief Train the model on a few batches of data and plot the loss curve.
+    @param model The model to train.
+    @param optimizer The optimizer to use for training.
+    @param x_train Training input data (numpy array).
+    @param y_train Training labels (numpy array).
+    @param num_classes Number of classes for one-hot encoding.
+    @param model_name Name of the model (for plotting and saving results).
+    """
+    
     batch_index = 0
     epoch_losses = []
     
@@ -86,6 +107,15 @@ def train_few_batches(model, optimizer, x_train, y_train, num_classes, model_nam
     plt.close()
 
 def overfit_on_small_batch(model, optimizer, x_batch, y_batch, num_classes, num_runs=100):
+    """
+    @brief Overfit the model on a small batch of data.
+    @param model The model to overfit.
+    @param optimizer The optimizer to use for training.
+    @param x_batch Input data (numpy array).
+    @param y_batch True labels (numpy array).
+    @param num_classes Number of classes for one-hot encoding.
+    @param num_runs Number of training runs.
+    """
     losses = []
     for i in range(num_runs):
         optimizer.zero_grad()
