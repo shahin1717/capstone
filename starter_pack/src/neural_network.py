@@ -1,7 +1,6 @@
 import numpy as np
 from lite_torch import Tensor
 
-
 class Linear:
     def __init__(self, input_dim, hidden_dim, target_dim, seed=0):
         rng = np.random.default_rng(seed)
@@ -15,19 +14,19 @@ class Linear:
         self.b1 = Tensor(b1)
         self.W2 = Tensor(W2)
         self.b2 = Tensor(b2)
-
+    
     def __call__(self, x):
         z = x @ self.W1 + self.b1
         h = z.tanh()
         s = h @ self.W2 + self.b2
         p = s.softmax()
         return p
-
-    def parameters(self, ):
+    
+    def parameters(self,):
         return [self.W1, self.b1, self.W2, self.b2]
-
+    
     def predict(self, x):
-        # uses greedy prediction
+        #uses greedy prediction
         probs = self(x)
         target = np.argmax(probs.data, axis=-1)
         return target
