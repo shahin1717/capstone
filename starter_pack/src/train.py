@@ -5,7 +5,7 @@ from config import Config as cfg
 from optimizers import SGD, MomentumOptimizer, Adam
 from data_loader import load_linear_gaussian, load_moons, load_digits
 from lite_torch import Tensor
-from math_utils import one_hot
+from onehot import one_hot
 
 
 def _save_params(model):
@@ -18,6 +18,15 @@ def _restore_params(model, saved_parameters):
 
 
 def evaluate(model, x_data, y_labels, num_classes):
+    """
+    @brief Evaluates the model on the given data and labels, computing the average cross-entropy loss and accuracy.
+    @param model: the model to evaluate (e.g., SoftmaxRegression or Linear)
+    @param x_data: input data as a numpy array of shape (num_samples, num_features)
+    @param y_labels: true class labels as a numpy array of shape (num_samples
+    @param num_classes: the number of classes for one-hot encoding the labels
+    @return: a tuple (loss, accuracy) where loss is the average cross-entropy loss over the dataset and accuracy is the fraction of correctly predicted samples.
+    """
+    
     predictions = model(Tensor(x_data))
     loss = predictions.crossentropy(Tensor(one_hot(y_labels, num_classes)))
     accuracy = float(np.mean(np.argmax(predictions.data, axis=1) == y_labels))
@@ -25,6 +34,16 @@ def evaluate(model, x_data, y_labels, num_classes):
 
 
 def train_epoch(model, optimizer, x_train, y_train, num_classes):
+    """
+    @brief Trains the model for one epoch on the given training data and labels, using the specified optimizer.
+    @param model: the model to train
+    @param optimizer: the optimizer to use for updating the model parameters
+    @param x_train: training input data as a numpy array of shape (num_samples, num_features)
+    @param y_train: training class labels as a numpy array of shape (num_samples)
+    @param num_classes: the number of classes for one-hot encoding the labels
+    @return: a tuple (average_loss, accuracy) where average_loss is the average cross-entropy loss over the training data for this epoch and accuracy is the fraction of correctly predicted samples in the training data for this epoch.
+    """
+    
     permutation = np.random.permutation(x_train.shape[0])
     x_train, y_train = x_train[permutation], y_train[permutation]
     total_loss, total_correct, total_samples = 0.0, 0, 0
@@ -45,6 +64,16 @@ def train_epoch(model, optimizer, x_train, y_train, num_classes):
 
 
 def train(model, optimizer, x_train, y_train, x_val, y_val, num_classes):
+    """
+    @brief Trains the model using the specified optimizer on the training data, while evaluating on the validation data to track performance and save the best model parameters based on validation loss.
+    @param model: the model to train 
+    @param optimizer: the optimizer to use for updating the model parameters 
+    @param x_train: training input data as a numpy array of shape (num_samples, num_features)
+    @param y_train: training class labels as a numpy array of shape (num_samples)
+    @param x_val: validation input data as a numpy array of shape (num_val_samples, num_features)
+    @param y_val: validation class labels as a numpy array of shape (num_val_samples)
+    @param num_classes: the number of classes for one-hot encoding the labels
+    """
     train_loss_history, train_acc_history = [], []
     val_loss_history, val_acc_history = [], []
     best_val_loss, best_params = np.inf, None
@@ -67,9 +96,21 @@ def train(model, optimizer, x_train, y_train, x_val, y_val, num_classes):
 
 
 def run_softmax_baseline(dataset_name, x_train, y_train, x_val, y_val, x_test, y_test):
+    """
+    @brief Runs the softmax regression baseline experiment on the given dataset, training the model and evaluating its performance on the validation and test sets, then printing the results.
+    @param dataset_name: a string name for the dataset
+    @param x_train: training input data as a numpy array of shape (num_samples, num_features)
+    @param y_train: training class labels as a numpy array of shape (num_samples)
+    @param x_val: validation input data as a numpy array of shape (num_val_samples, num_features)
+    @param y_val: validation class labels as a numpy array of shape (num_val_samples)
+    @param x_test: test input data as a numpy array of shape (num_test_samples, num_features)
+    @param y_test: test class labels as a numpy array of shape (num_test_samples)
+    @return: the trained SoftmaxRegression model after training and evaluation
+    """
     num_classes = int(y_train.max()) + 1
     model = SoftmaxRegression(x_train.shape[1], num_classes)
-    train(model, SGD(model.parameters(), cfg.SGD_LR), x_train, y_train, x_val, y_val, num_classes)
+    optimizer = SGD(model.parameters(), cfg.SGD_LR)
+    train(model, optimizer, x_train, y_train, x_val, y_val, num_classes)
     
     val_loss, val_acc = evaluate(model, x_val, y_val, num_classes)
     test_loss, test_acc = evaluate(model, x_test, y_test, num_classes)
@@ -81,6 +122,18 @@ def run_softmax_baseline(dataset_name, x_train, y_train, x_val, y_val, x_test, y
 
 
 def run_optimizer_study(dataset_name, x_train, y_train, x_val, y_val, x_test, y_test):
+    """
+    @brief Runs the optimizer study experiment on the given dataset, training a linear model with different optimizers and evaluating their performance on the validation and test sets, then printing the results for each optimizer.
+    @param dataset_name: a string name for the dataset
+    @param x_train: training input data as a numpy array of shape 
+    @param y_train: training class labels as a numpy array of shape (num_samples)
+    @param x_val: validation input data as a numpy array of shape (num_val_samples, num_features)
+    @param y_val: validation class labels as a numpy array of shape (num_val_samples)
+    @param x_test: test input data as a numpy array of shape (num_test_samples, num_features)
+    @param y_test: test class labels as a numpy array of shape (num_test_samples)
+    @return: a dictionary containing the results for each optimizer, where the keys are the optimizer names and the values are dictionaries with validation and test loss and accuracy.
+    """
+    
     num_classes = int(y_train.max()) + 1
     optimizer_configs = [
         ("SGD",      lambda p: SGD(p, cfg.SGD_LR)),
@@ -103,6 +156,17 @@ def run_optimizer_study(dataset_name, x_train, y_train, x_val, y_val, x_test, y_
 
 
 def run_capacity_ablation(dataset_name, x_train, y_train, x_val, y_val, x_test, y_test):
+    """
+    @brief Runs the capacity ablation experiment on the given dataset, training linear models with different hidden layer widths and evaluating their performance on the validation and test sets, then printing the results for each width along with confidence intervals.
+    @param dataset_name: a string name for the dataset
+    @param x_train: training input data as a numpy array of shape (num_samples, num_features)
+    @param y_train: training class labels as a numpy array of shape (num_samples)
+    @param x_val: validation input data as a numpy array of shape (num_val_samples, num_features)
+    @param y_val: validation class labels as a numpy array of shape (num_val_samples)
+    @param x_test: test input data as a numpy array of shape (num_test_samples, num_features)
+    @param y_test: test class labels as a numpy array of shape (num_test_samples)
+    @return: a dictionary containing the results for each hidden layer width, where the keys are the widths and the values are dictionaries with mean and confidence interval for validation loss and test accuracy.
+    """
     num_classes = int(y_train.max()) + 1
     print(f"\n=== Capacity Ablation | {dataset_name} ===")
     results = {}
@@ -111,7 +175,8 @@ def run_capacity_ablation(dataset_name, x_train, y_train, x_val, y_val, x_test, 
         for seed in range(cfg.N_SEEDS):
             np.random.seed(seed)
             model = Linear(x_train.shape[1], width, num_classes)
-            train(model, SGD(model.parameters(), cfg.SGD_LR), x_train, y_train, x_val, y_val, num_classes)
+            optimizer = SGD(model.parameters(), cfg.SGD_LR)
+            train(model, optimizer, x_train, y_train, x_val, y_val, num_classes)
             
             v_loss, _ = evaluate(model, x_val, y_val, num_classes)
             _, te_acc = evaluate(model, x_test, y_test, num_classes)

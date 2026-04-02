@@ -58,24 +58,3 @@ def data_info(name: str, X: np.ndarray, y: np.ndarray): # Used for debugging.
     print(f"    classes : {classes.tolist()}")
     print(f"    counts  : {counts.tolist()}")
  
-
-if __name__ == "__main__": 
-    print("\n-- Linear Gaussian --")
-    X_tr, y_tr, X_v, y_v, X_te, y_te = load_linear_gaussian()
-    data_info("train", X_tr, y_tr)
-    data_info("val",   X_v,  y_v)
-    data_info("test",  X_te, y_te)
- 
-    print("\n-- Moons --")
-    X_tr, y_tr, X_v, y_v, X_te, y_te = load_moons()
-    data_info("train", X_tr, y_tr)
-    data_info("val",   X_v,  y_v)
-    data_info("test",  X_te, y_te)
- 
-    print("\n-- Digits --")
-    X_tr, y_tr, X_v, y_v, X_te, y_te = load_digits()
-    data_info("train", X_tr, y_tr)
-    data_info("val",   X_v,  y_v)
-    data_info("test",  X_te, y_te)
- 
-    print("\nAll datasets loaded successfully.")

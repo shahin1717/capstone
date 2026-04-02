@@ -2,6 +2,13 @@ import numpy as np
 from config import Config as cfg
 
 class Optimizer:
+    """
+    @brief Base class for optimization algorithms
+    @param parameters: List of model parameters to optimize
+    @param learning_rate: Step size for parameter updates
+    @param weight_decay: L2 regularization strength
+    """
+    
     def __init__(self, parameters, learning_rate, weight_decay=cfg.LAMBDA):
         self.parameters = parameters
         self.learning_rate = learning_rate
@@ -13,6 +20,10 @@ class Optimizer:
 
 
 class SGD(Optimizer):
+    """
+    @brief Stochastic Gradient Descent optimizer with L2 regularization
+    """
+    
     def __init__(self, parameters, learning_rate, weight_decay=cfg.LAMBDA):
         super().__init__(parameters, learning_rate, weight_decay)
 
@@ -23,6 +34,10 @@ class SGD(Optimizer):
 
 
 class MomentumOptimizer(Optimizer):
+    """
+    @brief Momentum-based optimizer that accelerates SGD by adding a velocity term
+    """
+    
     def __init__(self, parameters, learning_rate, momentum_coeff=0.9, weight_decay=cfg.LAMBDA):
         super().__init__(parameters, learning_rate, weight_decay)
         self.momentum_coeff = momentum_coeff
@@ -36,6 +51,10 @@ class MomentumOptimizer(Optimizer):
 
 
 class Adam(Optimizer):
+    """
+    @brief Adam optimizer that combines momentum and adaptive learning rates
+    """
+    
     def __init__(self, parameters, learning_rate, b1=0.9, b2=0.999, eps=1e-8, weight_decay=cfg.LAMBDA):
         super().__init__(parameters, learning_rate, weight_decay)
         self.b1 = b1
