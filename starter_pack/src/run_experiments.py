@@ -15,7 +15,7 @@ FIG_DIR / RES_DIR below if your layout differs.
 import os
 import json
 import numpy as np
-import matplotlib
+import matplotlib 
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
@@ -45,11 +45,15 @@ plt.rcParams.update({
 COLORS = {"softmax": "#5177b8", "nn": "#e07b39"}
 
 
-# ---------------------------------------------------------------------------
-# HELPERS
-# ---------------------------------------------------------------------------
 
 def _make_optimizer(name, params):
+    """
+    @brief Factory function to create optimizers by name. Uses hyperparameters from config.py.
+    @param name: string, one of "SGD", "Momentum", "Adam"
+    @param params: list of model parameters to optimize (from model.parameters())
+    @return: an instance of the requested optimizer initialized with the given parameters
+    """
+    
     if name == "SGD":
         return SGD(params, cfg.SGD_LR)
     if name == "Momentum":
@@ -60,10 +64,16 @@ def _make_optimizer(name, params):
 
 
 def _predict(model, X):
-    return np.argmax(model(Tensor(X)).data, axis=1)
+    return model(Tensor(X)).data.argmax(axis=1)
 
 
 def _ci95(values):
+    """
+    @brief Computes the 95% confidence interval half-width for a list of values.
+    @param values: list of numeric values (e.g., accuracies from multiple seeds)
+    @return: the half-width of the 95% confidence interval for the mean of the values, using the sample standard deviation and the critical t-value for 95% confidence with n-
+    """
+    
     arr = np.array(values, dtype=float)
     return cfg.T_CRITICAL * arr.std(ddof=1) / np.sqrt(len(arr))
 
@@ -292,7 +302,7 @@ def run_repeated_seeds(datasets):
                 opt   = SGD(model.parameters(), cfg.SGD_LR)
             else:
                 model = Linear(d, cfg.HIDDEN_WIDTH, k, seed=seed)
-                opt   = SGD(model.parameters(), cfg.SGD_LR)
+                opt   = Adam(model.parameters(), cfg.ADAM_LR, cfg.ADAM_B1, cfg.ADAM_B2, cfg.ADAM_EPS)
             train(model, opt, X_tr, y_tr, X_v, y_v, k)
             te_ce, te_acc = evaluate(model, X_te, y_te, k)
             accs.append(te_acc); ces.append(te_ce)
