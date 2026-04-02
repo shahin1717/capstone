@@ -102,7 +102,7 @@ def train_few_batches(model, optimizer, x_train, y_train, num_classes, model_nam
     plt.ylabel("Loss")
     plt.grid(True)
     
-    save_path = os.path.join(os.getcwd(), f"{model_name}_loss.png")
+    save_path = f"../figures/{model_name}_loss.png"
     plt.savefig(save_path)
     plt.close()
 
@@ -162,4 +162,4 @@ for item in models_to_run:
     print(f"\n[3] Overfitting Test - {name}")
     overfit_on_small_batch(model, opt, x_train_lg[:10], y_train_lg[:10], num_classes)
     
-    print(f"\n{name} tasks completed. Plot saved to: {os.path.join(os.getcwd(), name + '_loss.png')}")
+    print(f"\n{name} tasks completed. Plot saved to: {f'../figures/{name}_loss.png'}")

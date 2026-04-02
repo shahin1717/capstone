@@ -26,7 +26,7 @@ class SoftmaxRegression:
 
     def predict(self, X):
         P = self(X)
-        return np.argmax(P, axis=1)
+        return np.argmax(P.data, axis=1)
 
     def parameters(self):
         return [self.W, self.b]
