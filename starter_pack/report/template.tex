@@ -11,46 +11,331 @@
 \usepackage{enumitem}
 \usepackage{tabularx}
 
-\title{Math4AI Capstone Report Title}
-\author{Team Member 1 \and Team Member 2 \and Team Member 3}
+\title{From Linear Scores to a Single Hidden Layer:\\
+A Mathematical Study of Simple Learning Systems}
+\author{Shahin Alakbarov \and Murad Asgarov \and Gurban Burjuzada \and Davud Gurbanov}
 \date{}
 
 \begin{document}
 \maketitle
 
 \begin{abstract}
-State the central question, the models compared, the main experimental evidence, and the conclusion in 120--180 words.
+This project is studying the question of when a single hidden layer Neural Network is better than linear softmax regression model and when additional complexity is unnecessary. In this work we have implemented both models from scratch using NumPy across 3 different tasks: linearly separable Gaussian task, nonlinear moons task and MNIST digits dataset. Results of this experiment suggests that linear models are enough when the data is close to being linearly separated, and hidden layer NN gives an advantage when the boundaries are non-linear. On the MNIST digits dataset, we show that NN performs moderately as in accuracy but far more better in generalization. We also
+study optimizer behaviour, capacity effects, and one instructive failure case.
+The conclusion from this work is that complex models should be justified and simple models should be used when possible.
 \end{abstract}
 
+% -----------------------------------------------------------------------
 \section{Introduction}
-Frame the capstone question and explain why comparing a linear model to a one-hidden-layer neural network is scientifically meaningful.
+% -----------------------------------------------------------------------
 
+We begin with a question - In which cases should we prefer hidden layer nonlinear classifiers over simple linear seperation models, and when is the additional complexity necessary?
+Before exploring the question, we can observe that different types of dataset types will benefit from different kind of models, namely, a dataset where input features and target variable follows a linear relation will benefit more from a model which uses linear seperation model, whereas a dataset that doesn't have features with clear linear relationship between its target value will benefit more from Neural Networks(One hidden layer in our work).
+
+From a geometrical perspective, what a hidden layer does is as follows: Linear step where it multiplies inputs by weights and add biases, applying non-linear activation function (such as tanh, ReLU etc.), then pass the output. Introduced non-linearity changes the the input space in a non-linear way (stretch, twist bend). This change in space makes the linear seperation possible so we can use simple hyperplanes to classify the data. A pure linear model lacks this because its decision boundary is always affine in the original input space.
+
+When we train the models, our aim is always to have low generalization error without trading off too much training error. When training error is too high, model underfits the data, whereas when the training error becomes low while the test error increases, the model overfits the data. We can control this by regulating the capacity of the learning algorithm, which shows the complexity of functions that our model can represent. Capacity is controlled by hypothesis space. For example, A hypothesis space spanned by high-degree polynomials may fit training points
+precisely while producing wild behaviour between them, failing to reflect the true
+underlying function. As Goodfellow et al.\ note, generalization error is always bounded
+below by the expected training error, so capacity must be chosen carefully~\cite{goodfellow}.
+
+It is well known that we can approximate any continuous function with the help of one hidden layer NN, given it has enough neurons (result of the Universal Approximation Theorem)~\cite{cs231n_nn1}. 
+
+This means the question is not "Can a neural network solve this?", it is "Is adding hidden layer really necessary for this dataset?". A more complex model should be justifiable when changing the model, by evidence on held-out data. In our work, we implemented both linear softmax regression model and a one hidden layer Neural Network from scratch in NumPy, tested them on 3 different datasets with varying structures: linearly seperable, nonlinear moons task and MNIST digits dataset. The tests were done on repeated seeds to ensure honest statistics and evidence. 
+
+% -----------------------------------------------------------------------
 \section{Background and Mathematical Setup}
-Define the AI concepts used in the project and summarize the required mathematical setup. Explain why softmax regression is a probabilistic model, why cross-entropy is negative log-likelihood, and describe the one-hidden-layer model structurally without pre-answering the main interpretive questions.
+% -----------------------------------------------------------------------
 
+\subsection{Softmax and class probabilities}
+
+In multiclass classification, we need to convert the inputs into valid probability distributions, i.e when a model predicts an output with different probabilities for each class, they should sum up to give 1. We do this by exponentiating each input, which makes all the entries positive and normalize them by dividing each class with the total sum of the exponentials of each class, ensuring the classification becomes a valid probability distribution:
+\begin{equation}
+    p_j(x) = \frac{e^{s_j}}{\sum_{\ell=1}^{k} e^{s_\ell}}.
+\end{equation}
+Softmax is applied at the output layer of both models in this project, not as a hidden
+activation. Hidden nonlinearity is introduced separately via the tanh function, as
+described in Section~\ref{sec:arch}.
+
+\subsection{Cross-entropy loss as negative log-likelihood}
+
+The likelihood of $\theta$ is, given observed data, what is the porbability of getting the obtained data? It has the formula as follows:
+\begin{equation}
+    \mathcal{L}(\theta \mid \mathbf{x}) = P(\mathbf{x} \mid \theta)
+    = \prod_{i} P\!\left(y^{(i)} \mid x^{(i)}; \theta\right).
+\end{equation}
+Maximum likelihood will find the value of $\theta$ that will maximize this expression. For numerical stability (for example, when dealing with near 0 values, their product will become very close to 0 and may result in numerical underflow, i.e treating them as 0) we convert the prodouct into summation by taking the log of the expression in both sides:
+\begin{equation}
+    \log \mathcal{L}(\theta) = \sum_{i=1}^{n} \log P\!\left(y^{(i)} \mid x^{(i)}; \theta\right).
+\end{equation}
+Taking the negative gives us Negative Log Likelihood, which we then minimize instead of amximizing. And below is the Cross-entropy formula that measures the difference between probability distributions, in this case true label distribution $p$ and the predicted distribution $q$:
+\begin{equation}
+    H(p,q) = -\sum_j p_j \log q_j.
+\end{equation}
+Since the one hot endocing gives correct class 1 and 0 to the others, the entire expression collects on one term: the negative log-probability assigned to the correct class, This gives:
+\begin{equation}
+    \mathcal{L} = -\frac{1}{n}\sum_{i=1}^{n} \log P_{i,\,y_i},
+\end{equation}
+which is the same as mean negative log-likelihood. Minimizing cross-entropy is same as MLE under softmax model, which means classification depends on probabilistic reasoning instead of an arbitrary penalty.
+
+\subsection{One-hidden-layer network and vectorized forward pass}
+\label{sec:arch}
+
+The neural network used in this project has a single hidden layer with tanh activations.
+For a batch of inputs stored row-wise in $X \in \mathbb{R}^{n \times d}$, the forward
+pass is:
+\begin{align}
+    Z_1 &= X W_1^\top + \mathbf{1}b_1^\top, \quad
+    H   = \tanh(Z_1), \\
+    S   &= H W_2^\top + \mathbf{1}b_2^\top, \quad
+    P   = \operatorname{softmax}(S).
+\end{align}
+Here $Z_1$ contains the pre-activations of the hidden layer, $H$ the hidden
+representations after applying tanh elementwise, $S$ the output logits, and $P$ the
+predicted class probabilities. The softmax regression baseline follows the same structure
+with the hidden layer removed: $S = XW^\top + b$, $P = \operatorname{softmax}(S)$.
+
+\subsection{Backpropagation and parameter gradients}
+
+Backpropagation is the systematic application of the chain rule through the composed
+computation of the forward pass. Starting from the output, we propagate sensitivities
+of the loss with respect to each intermediate quantity in reverse order.
+
+The gradient of the loss with respect to the output logits $S$ has a compact closed
+form. Since $Y$ is the one-hot label matrix and $P$ the predicted probabilities:
+\begin{equation}
+    \frac{\partial \mathcal{L}}{\partial S} = \frac{1}{n}(P - Y).
+\end{equation}
+To see where this comes from, note that $\frac{\partial \mathcal{L}}{\partial S_{ij}}$
+requires summing over all classes $m$ via the chain rule through softmax. The softmax
+Jacobian gives $P_j(1 - P_j)$ when $j = m$ and $-P_j P_m$ when $j \neq m$, which
+follows from the quotient rule applied to $P_j = e^{S_j}/\sum_\ell e^{S_\ell}$.
+Combining this with $\partial \mathcal{L}/\partial P_{ij} = -(1/n) \cdot Y_{ij}/P_{ij}$
+and using the one-hot structure of $Y$, the two cases collapse cleanly into the
+expression above.
+
+The remaining gradients follow by standard matrix calculus:
+\begin{align}
+    \frac{\partial \mathcal{L}}{\partial W_2}
+        &= \left(\frac{\partial \mathcal{L}}{\partial S}\right)^\top H,
+    \qquad
+    \frac{\partial \mathcal{L}}{\partial b_2}
+        = \left(\frac{\partial \mathcal{L}}{\partial S}\right)^\top \mathbf{1}, \\[4pt]
+    \frac{\partial \mathcal{L}}{\partial Z_1}
+        &= \frac{\partial \mathcal{L}}{\partial S}\, W_2
+           \odot \bigl(1 - H \odot H\bigr), \\[4pt]
+    \frac{\partial \mathcal{L}}{\partial W_1}
+        &= \left(\frac{\partial \mathcal{L}}{\partial Z_1}\right)^\top X,
+    \qquad
+    \frac{\partial \mathcal{L}}{\partial b_1}
+        = \left(\frac{\partial \mathcal{L}}{\partial Z_1}\right)^\top \mathbf{1}.
+\end{align}
+The $(1 - H \odot H)$ term is the elementwise derivative of tanh, since
+$\tfrac{d}{dz}\tanh(z) = 1 - \tanh^2(z)$.
+
+% -----------------------------------------------------------------------
 \section{Methods}
-Describe the datasets, preprocessing, softmax regression, neural network, training protocol, optimizer choices, and evaluation metrics. Make the digits protocol explicit and state exactly how validation and test data were used.
+% -----------------------------------------------------------------------
 
+\subsection{Datasets}
+
+Three datasets are used throughout this project, each chosen to test a different
+geometric property of the learned decision boundary.
+
+The \emph{linear Gaussian dataset} is a synthetic two-class collection of normally
+distributed clusters in two dimensions. Because the class-conditional distributions
+are Gaussian with mild overlap, the optimal decision boundary is approximately a
+straight line, making this the natural test case for a linear classifier.
+
+The \emph{moons dataset} is a synthetic two-class benchmark in two dimensions where
+the classes form two interleaving crescent shapes. No affine boundary can correctly
+separate these classes, so this dataset is the primary test of whether the hidden
+layer's nonlinear transformation is actually necessary.
+
+The \emph{digits dataset} is a real ten-class benchmark in which each example is the
+flattened pixel values of an 8$\times$8 handwritten digit image, yielding 64-dimensional
+input vectors. Unlike the synthetic tasks, digits present high-dimensional structure and
+natural class overlap, making it the main benchmark for comparing generalization
+performance under a realistic setting.
+
+\subsection{Preprocessing and data splits}
+
+The digits features are provided pre-scaled to the interval $[0,1]$; no additional
+normalization, whitening, or augmentation was applied, per the experimental protocol.
+Fixed train, validation, and test indices were loaded directly from
+\texttt{digits\_split\_indices.npz} to ensure identical splits across all experiments.
+For the synthetic datasets, the provided \texttt{.npz} files were used as-is.
+
+Labels were one-hot encoded for use in vectorized cross-entropy computation. The
+validation set was used exclusively for model selection and checkpoint picking; the
+test set was evaluated exactly once per seed after all configuration decisions had
+been finalized.
+
+\subsection{Model architectures}
+
+\emph{Softmax regression} computes class logits as an affine function of the input,
+$S = XW^\top + b$, where $W \in \mathbb{R}^{k \times d}$ and $b \in \mathbb{R}^k$,
+and converts these to probabilities via softmax. This model has $k(d+1)$ trainable
+parameters.
+
+\emph{The one-hidden-layer neural network} extends this by inserting a hidden layer
+with $h = 32$ units and tanh activations, following the architecture in
+Section~\ref{sec:arch}. Its parameter count is $h(d+1) + k(h+1)$. Both models were
+implemented from scratch in NumPy using the vectorized forward and backward pass
+formulas derived in Section~2. Weights were initialized using Xavier initialization;
+biases were set to zero.
+
+\subsection{Automatic differentiation via \texttt{lite\_torch}}
+
+To avoid hardcoding every partial derivative manually, a lightweight automatic
+differentiation module (\texttt{lite\_torch}) was implemented alongside the core
+models. It defines a \texttt{Tensor} class that builds a dynamic computation graph
+during the forward pass, recording each operation and its inputs. During the backward
+pass, the \texttt{backward()} method traverses this graph in reverse topological order,
+applying the chain rule at each node to accumulate gradients in each tensor's
+\texttt{.grad} attribute. This mirrors the core principle of reverse-mode autodiff as
+used in frameworks like PyTorch, implemented here from scratch in NumPy.
+
+\subsection{Optimizers}
+
+Three optimizers were implemented, all inheriting shared attributes --- learning rate,
+weight decay, and parameter references --- from a common base class.
+
+\emph{Mini-batch SGD} updates each parameter by subtracting the gradient scaled by
+the learning rate ($\eta = 0.05$). \emph{SGD with Momentum} maintains a velocity term
+that accumulates a decaying sum of past gradients (momentum coefficient $\beta = 0.9$,
+$\eta = 0.05$), which smooths updates and helps avoid getting stuck in flat regions of
+the loss surface. \emph{Adam} maintains per-parameter first and second moment estimates
+($\beta_1 = 0.9$, $\beta_2 = 0.999$, $\varepsilon = 10^{-8}$, $\eta = 0.001$) and
+applies bias correction, producing adaptive step sizes for each parameter.
+
+\subsection{Training protocol and evaluation}
+
+All models were trained for a maximum of 200 epochs using mini-batches of size 64, with
+L2 regularization coefficient $\lambda = 10^{-4}$. For the digits benchmark, the
+checkpoint achieving the lowest validation cross-entropy within this budget was saved
+and used for final evaluation. Validation cross-entropy was the sole criterion for
+model selection; test performance played no role in any configuration decision.
+
+Two evaluation metrics were reported: classification accuracy (fraction of correctly
+classified examples) and mean cross-entropy loss (average negative log-probability
+assigned to the true class). For the digits benchmark, five independent runs with
+different random seeds were conducted for each final selected configuration, and results
+were summarized as means with 95\% confidence intervals using
+\begin{equation}
+    \bar{x} \pm 2.776 \cdot \frac{s}{\sqrt{5}},
+\end{equation}
+where $\bar{x}$ is the sample mean and $s$ the sample standard deviation across seeds.
+
+% -----------------------------------------------------------------------
 \section{Implementation Sanity Checks}
-Briefly document at least three verification checks, such as a gradient sanity check, probability-sum check, tiny-subset loss decrease, tiny-subset overfitting test, or NaN/Inf check.
+% -----------------------------------------------------------------------
 
+% TODO: Document at least three of the following checks with brief results:
+%   - Gradient sanity check (numerical vs analytical on a tiny batch)
+%   - Probability-sum check (softmax rows sum to 1)
+%   - Tiny-subset loss decrease (loss falls after a few updates on 5--10 examples)
+%   - Tiny-subset overfitting test (model reaches near-zero loss on 10 examples)
+%   - NaN/Inf check (no silent numerical failures during training)
+% Keep this section short and concrete --- its purpose is to show implementation
+% discipline, not to become a second report.
+
+% -----------------------------------------------------------------------
 \section{Experiments}
-Report the required core comparisons and ablations. Prefer a small number of well-designed figures over many shallow plots. Treat the following as questions your evidence must answer: when is the linear model sufficient, what representational change the hidden layer provides, when extra complexity fails to justify itself, what the failure case teaches, and what repeated-seed statistics add beyond a single run.
+% -----------------------------------------------------------------------
 
+% TODO: Report results in the order below. For each experiment, lead with
+% the figure or table, then interpret it. Do not just describe what you see ---
+% explain what it means for the central question.
+%
+% 5.1 Linear Gaussian task (decision-boundary plot, both models)
+% 5.2 Moons task (decision-boundary plot, both models)
+% 5.3 Digits benchmark (accuracy + cross-entropy table, training curve)
+% 5.4 Capacity ablation on moons (hidden widths 2, 8, 32)
+% 5.5 Optimizer study on digits (SGD, Momentum, Adam --- neural net only)
+% 5.6 Failure case analysis (explain the mechanism, not just show the result)
+% 5.7 Repeated-seed statistics (mean, CI for both models on digits test set)
+
+% -----------------------------------------------------------------------
 \section{Advanced Track}
-Include exactly one of the following:
-\begin{itemize}[leftmargin=1.4em]
-    \item Track A: PCA/SVD and input geometry
-    \item Track B: Prediction confidence and reliability
-\end{itemize}
+% -----------------------------------------------------------------------
 
+% TODO: Complete exactly one track.
+%
+% Track A --- PCA/SVD and input geometry:
+%   - Scree plot
+%   - 2D PCA visualization of digits
+%   - Softmax accuracy comparison at m in {10, 20, 40} PCA dimensions
+%   - Brief interpretation tied back to the main question
+%
+% Track B --- Prediction confidence and reliability:
+%   - Confidence defined as max predicted class probability
+%   - Predictive entropy from the softmax output
+%   - 5-bin confidence-vs-accuracy table or plot for both models
+%   - Comparison of confidence for correct vs incorrect predictions
+%   - Brief interpretation tied back to the main question
+
+% -----------------------------------------------------------------------
 \section{Discussion}
-Interpret the results. State clearly where linear structure was sufficient, where nonlinearity helped, and why. Distinguish what is supported by evidence from what remains uncertain. Use consistent notation and define symbols before using them.
+% -----------------------------------------------------------------------
 
+% TODO: Interpret the results. Explicitly answer the four required questions:
+%   1. When is the linear model geometrically sufficient, and when is it not?
+%   2. What representational change does the hidden layer provide?
+%   3. When does additional model complexity fail to justify itself?
+%   4. What does the failure case teach about optimization, capacity, or generalization?
+%   5. What do repeated-seed statistics add beyond a single run?
+% Distinguish what is supported by evidence from what remains uncertain.
+
+% -----------------------------------------------------------------------
 \section{Limitations}
-Explain what the project does not test and which conclusions should not be overgeneralized.
+% -----------------------------------------------------------------------
 
+% TODO: Explain what the project does not test and which conclusions should
+% not be overgeneralized. Required subsection --- be honest and specific.
+
+% -----------------------------------------------------------------------
 \section*{References}
-Use a consistent citation style.
+% -----------------------------------------------------------------------
+
+\begin{thebibliography}{9}
+
+\bibitem{mml}
+Marc Peter Deisenroth, A.\ Aldo Faisal, and Cheng Soon Ong.
+\textit{Mathematics for Machine Learning}.
+Cambridge University Press, 2020.
+
+\bibitem{murphy}
+Kevin P.\ Murphy.
+\textit{Probabilistic Machine Learning: An Introduction}.
+MIT Press, 2022.
+
+\bibitem{goodfellow}
+Ian Goodfellow, Yoshua Bengio, and Aaron Courville.
+\textit{Deep Learning}.
+MIT Press, 2016.
+
+\bibitem{cs229}
+Andrew Ng and Kian Katanforoosh.
+CS229 Lecture Notes: Deep Learning.
+Stanford University.
+\url{https://cs229.stanford.edu/}
+
+\bibitem{cs231n_nn1}
+Stanford CS231n staff.
+Neural Networks Part 1: Setting up the Architecture.
+\url{https://cs231n.github.io/neural-networks-1/}
+
+\bibitem{cs231n_bp}
+Stanford CS231n staff.
+Optimization Part 2: Backpropagation, Intuitions.
+\url{https://cs231n.github.io/optimization-2/}
+
+\bibitem{ethml}
+ETH Zurich Learning and Adaptive Systems Group.
+Introduction to Machine Learning Course Notes.
+\url{https://las.inf.ethz.ch/teaching/introml-s24}
+
+\end{thebibliography}
 
 \end{document}
