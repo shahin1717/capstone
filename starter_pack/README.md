@@ -31,10 +31,10 @@ Students are expected to implement the intellectually central parts of the proje
 
 Replace this section with your team members and high-level responsibilities.
 
-- Shahin Alakparov: math-utils and softmax regression coder.
-- Name 2: role
-- Name 3: role
-- Name 4: role 
+- Shahin Alakparov: Math-utils, softmax regression, documentation, Track B code base
+- Murad Asgarov: AutoGrad, Neural Network, documentation, Track B code base
+- Qurban Burjuzada: Experiment orchestration and plots
+- Davud Qurbanov: Report and presentation integration 
 
 ## Suggested Repository Layout
 
