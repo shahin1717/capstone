@@ -233,37 +233,104 @@ where $\bar{x}$ is the sample mean and $s$ the sample standard deviation across 
 
 To ensure the integrity of our from-scratch NumPy implementation, we conducted several verification checks prior to full-scale training:\begin{itemize}\item \textbf{Loss Decrease Verification:} We trained both the softmax regression and the neural network on a tiny subset of the data. As shown in the supplementary loss plots, the cross-entropy loss strictly and smoothly decreased over the first few batches, confirming that our analytical gradients and parameter update logic were correct.\item \textbf{Probability-Sum Check:} We programmatically verified that the sum of the predicted probabilities across all classes for every input row in our vectorized softmax output exactly equaled $1.0$ (within machine precision).\item \textbf{NaN/Inf Check:} We included assertions during the training loop to catch any numerical instability, ensuring no silent underflows occurred during the exponential operations in the softmax layer.\end{itemize}
 
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=0.48\textwidth]{SoftmaxRegression_loss.png}
+    \hfill
+    \includegraphics[width=0.48\textwidth]{LinearModel_loss.png}
+    \caption{Training loss over the first few batches on a tiny subset, confirming that both models update parameters correctly and decrease the loss.}
+    \label{fig:sanity_checks}
+\end{figure}
+
 % -----------------------------------------------------------------------
 \section{Experiments}
 % -----------------------------------------------------------------------
 \subsection{Linear Gaussian Task}We evaluated both models on the linearly separable Gaussian dataset. The softmax regression model successfully learned a clean, affine decision boundary that perfectly bisected the two classes. The neural network ($h=32$) also separated the classes, but its decision boundary exhibited unnecessary nonlinear artifacts and curvature. This demonstrates that when the underlying data distributions are linearly separable, the additional capacity of the hidden layer is mathematically superfluous and begins to overfit local noise rather than modeling the true distribution.
 
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=0.9\textwidth]{decision_boundary_linear_gaussian.png}
+    \caption{Decision boundaries on the linear Gaussian task. The linear model (left) is sufficient, while the neural network (right) introduces unnecessary nonlinear artifacts.}
+    \label{fig:linear_gaussian}
+\end{figure}
+
 \subsection{Moons Task}On the nonlinear moons dataset, softmax regression failed entirely, drawing an arbitrary affine line through the interlocking crescents. In contrast, the neural network effectively wrapped its decision boundary around the classes. Geometrically, the hidden layer's $\tanh$ activations warp the input space, transforming the tangled crescents into a linearly separable representation for the final output layer.
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=0.9\textwidth]{decision_boundary_moons.png}
+    \caption{Decision boundaries on the Moons dataset. Softmax regression (left) fails to capture the geometry, whereas the neural network (right) perfectly separates the classes.}
+    \label{fig:moons_boundary}
+\end{figure}
+
+\newpage
 
 \subsection{Digits Benchmark and Training Dynamics}On the high-dimensional digits benchmark, softmax regression converged quickly and stably to a validation accuracy of approximately $0.88$. Conversely, the neural network trained with standard SGD struggled with a long, flat plateau near $0.1$ accuracy for over 100 epochs before finally escaping the saddle point and learning. This highlights that while neural networks possess higher representational capacity, their non-convex loss landscapes make them highly sensitive to optimization dynamics.
 
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=0.9\textwidth]{digits_training_curves.png}
+    \caption{Training dynamics on the Digits benchmark using standard SGD. The neural network exhibits a long flat plateau before escaping the saddle point.}
+    \label{fig:digits_dynamics}
+\end{figure}
+
 \subsection{Capacity Ablation on Moons}To understand the effect of representational capacity, we ablated the hidden width of the neural network on the moons task:\begin{itemize}\item $h=2$ (Accuracy: $0.855$): Fails to capture the crescent curves due to geometric under-capacity.\item $h=8$ (Accuracy: $0.975$): Achieves the optimal balance, cleanly fitting the underlying data structure.\item $h=32$ (Accuracy: $0.957$): Fits the data, but accuracy drops slightly compared to $h=8$, and the boundary shows jagged artifacts, indicating mild overfitting.\end{itemize}
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=1\textwidth]{capacity_ablation_moons.png}
+    \caption{Capacity ablation on the Moons task comparing hidden widths of 2, 8, and 32. A width of 8 provides the optimal balance without underfitting or overfitting.}
+    \label{fig:capacity_ablation}
+\end{figure}
 
 \subsection{Optimizer Study on Digits}We compared SGD, Momentum, and Adam on the neural network ($h=32$):\begin{itemize}\item \textbf{SGD:} Was trapped in a flat region of the loss surface for 125 epochs before converging.\item \textbf{Momentum:} Failed to converge, flatlining at $0.1$ accuracy. The default learning rate combined with momentum likely caused the updates to consistently overshoot local minima.\item \textbf{Adam:} Converged almost instantly to near-perfect training accuracy and $\sim 0.95$ validation accuracy. Adaptive learning rates proved critical for navigating the complex loss landscape efficiently.\end{itemize}
 
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=0.9\textwidth]{optimizer_study_digits.png}
+    \caption{Optimizer study on the Digits benchmark ($h=32$). Adam converges almost instantly, while SGD plateaus and Momentum fails entirely with the default learning rate.}
+    \label{fig:optimizer_study}
+\end{figure}
+
 \subsection{Failure Case Analysis}Our primary failure case was the $h=2$ neural network on the moons dataset. Mathematically, two hidden $\tanh$ neurons can only define two primary transition regions (hyperplanes) in the hidden space. Two lines are geometrically insufficient to enclose a crescent shape. The validation loss curve explicitly shows the model plateauing at a high loss because it physically cannot bend the space any further, demonstrating a hard capacity limit.
 
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=1\textwidth]{failure_case_moons.png}
+    \caption{Failure case analysis for the neural network with $h=2$ on the Moons task, demonstrating a fundamental lack of geometric capacity to enclose the crescent shapes.}
+    \label{fig:failure_case}
+\end{figure}
+
 \subsection{Repeated-Seed Statistics}To ensure our conclusions were not artifacts of lucky initialization, we ran 5 seeds for our final configurations on the digits test set. The neural network achieved a mean accuracy of $0.953 \pm 0.005$, while the softmax regression achieved $0.916 \pm 0.098$. The tighter confidence interval for the neural network proves that, given a proper optimizer, the architecture reliably and consistently outperforms the linear baseline.
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=0.8\textwidth]{repeated_seeds_digits.png}
+    \caption{Repeated-seed statistics (5 seeds) on the Digits benchmark showing 95\% confidence intervals. The neural network's superiority is statistically significant and robust to initialization.}
+    \label{fig:repeated_seeds}
+\end{figure}
 
 % -----------------------------------------------------------------------
 \section{Advanced Track: Prediction Confidence and Reliability}% -----------------------------------------------------------------------
 
-We conducted a reliability analysis on the digits benchmark to assess predictive confidence (defined as the maximum predicted class probability) versus empirical accuracy. While the neural network achieves higher raw accuracy, its reliability diagram deviates significantly from perfect calibration. It is frequently overconfident, assigning high probabilities to incorrect predictions. The simpler softmax regression model remains much closer to the perfect calibration line. This suggests that while the hidden layer's nonlinear warping improves discriminative power, it distorts the logit space so aggressively that the resulting softmax outputs behave more like ranking scores than well-calibrated probabilities.
+We analyzed the reliability of both architectures (Softmax and NN) with reliability diagram, comparing the confidence of the models, and the actual accuracy. In the plot below, we can see that simple softmax regression model is closer to the perfect calibration line after around 65\% ( Confidence = Accuracy ) than Neural Network, meaning Neural Network is often more overconfident than softmax, assigning high probabilities to the incorrect predictions. This shows that even though even though Neural Networks can produce higher accuracy results, they might be overconfident in their guesses.
+
+\begin{figure}[h]
+    \centering
+    \includegraphics[width=0.6\textwidth]{reliability_diagram.png}
+    \caption{Reliability diagram on the Digits test set. Softmax regression is closer to the perfect calibration line than Neural Network, meaning NNs exhibits more overconfidence.}
+    \label{fig:reliability}
+\end{figure}
 
 % -----------------------------------------------------------------------
 \section{Discussion}
-Based on our experimental evidence, we can address the core questions of this study:\begin{enumerate}\item \textbf{When is the linear model sufficient?} The linear model is geometrically sufficient when the class distributions are linearly separable (Gaussian task) or when well-calibrated probabilities are prioritized over raw accuracy. It is insufficient for complex geometries like the moons task.\item \textbf{Representational change of the hidden layer:} The hidden layer applies nonlinear geometric warping, mapping non-separable inputs into a new feature space where a simple affine hyperplane can easily classify them.\item \textbf{When does complexity fail to justify itself?} Additional complexity is unjustified on the linear Gaussian task, where it adds jagged boundary artifacts, and when capacity exceeds the dataset's complexity (e.g., $h=32$ vs $h=8$ on the moons task).\item \textbf{Lessons from the failure case:} The $h=2$ moons failure teaches that optimization algorithms cannot overcome a fundamental architectural lack of geometric capacity.\item \textbf{Value of repeated-seed statistics:} The repeated seeds separate lucky parameter initializations from genuine, statistically significant architectural superiority, proving the neural network's advantage on the digits task is robust.\end{enumerate}
+Concluding from our experiment, we can answer the following questions:\begin{enumerate}\item \textbf{When is the linear model sufficient?} The linear model is best for tasks where the dataset is linearly seperable or when the well-calibrated probabilities are priority instead of raw accuracy. the linear model will be insufficient when the geometry of the data is not linear, like as in moons task.\item \textbf{Representational change of the hidden layer:} The hidden layer with non-linear activation function, takes a non-linear input space and applies a non-linear transformation (such as warping, twisting and bending). Then, a simple hyperplane easily seperates the classes in the new space. After projecting it back to the initial input space, we get a curve as a boundary between classes.\item \textbf{When does complexity fail to justify itself?} Additional complexity worsens the model when the capacity of the model exceeds the dataset's capacity, where it starts to overfit the data by just learning the noise. In our experiment, Gaussian task was clearly giving better results with simple linear model, on the contrary different number of hidden units gave varied results in the moon task (e.g., $h=32$ was overfit for the dataset and $h=8$ gave the best results on the moons task).\item \textbf{Lessons from the failure case:} The $h=2$ case on the moons task showed that, not enough capacity for the neural network will not outperform the simple linear model, since it lacks the capacity to fit to the complexity of the dataset.\item \textbf{Value of repeated-seed statistics:} Since Neural Networks are highly non-convex, some initializations of weights and biases could get 'lucky' and land on very good local minimum. To exclude the luck from the architecture we run the model in distinct seeds and calculate mean and confidence interval to prove the Neural Network's superiority across different initializations.\end{enumerate}
 
 % -----------------------------------------------------------------------
 \section{Limitations}
 % -----------------------------------------------------------------------
 
-This study has several constraints. First, we only evaluated a single hidden layer; deep networks might exhibit entirely different optimization plateaus and generalization behaviors. Second, we restricted our activation function to $\tanh$; modern architectures heavily favor ReLU, which mitigates the vanishing gradients that likely caused our SGD optimizer to plateau on the digits task. Finally, our reliability analysis was conducted on a relatively small test set, leading to high variance in the middle-confidence bins, meaning our calibration conclusions should be taken as preliminary rather than definitive.
+As in every experiment, we also have limitations for this work. First of all, our experiment was conducted on just one hidden layer, extending it to deep neural network might make the plateaus and optimization problems entirely different than just single hidden layer. Second, we only looked the behavior of $\tanh$ for the activation functions, whereas in modern architectures, ReLU is heavily favored due to it being resistent to the vanishing gradient problem, which was likely the cause of our SGD optimizer to plateau on the digits task. Finally, the test set was relatively small, which could mean high variance in the middle-confidence interval bins, meaning the results of this experiment may not generalize to the larger test sets.
 % -----------------------------------------------------------------------
 % -----------------------------------------------------------------------
 
