@@ -1,7 +1,7 @@
 # From Linear Scores to a Single Hidden Layer
 ### Math4AI Capstone — National AI Center
 
-**Team:** Shahin Alakbarov, Murad Asgarov, Gurban Burjuzada, Davud Gurbanov
+**Jellyfish team:** Shahin Alakparov, Murad Asgarov, Gurban Burjuzada, Davud Gurbanov
 
 ---
 
