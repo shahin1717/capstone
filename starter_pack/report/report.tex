@@ -13,14 +13,14 @@
 
 \title{From Linear Scores to a Single Hidden Layer:\\
 A Mathematical Study of Simple Learning Systems}
-\author{Shahin Alakbarov \and Murad Asgarov \and Gurban Burjuzada \and Davud Gurbanov}
+\author{Shahin Alakparov \and Murad Asgarov \and Gurban Burjuzada \and Davud Gurbanov}
 \date{}
 
 \begin{document}
 \maketitle
 
 \begin{abstract}
-This project is studying the question of when a single hidden layer Neural Network is better than linear softmax regression model and when additional complexity is unnecessary. In this work we have implemented both models from scratch using NumPy across 3 different tasks: linearly separable Gaussian task, nonlinear moons task and MNIST digits dataset. Results of this experiment suggests that linear models are enough when the data is close to being linearly separated, and hidden layer NN gives an advantage when the boundaries are non-linear. On the MNIST digits dataset, we show that NN performs moderately as in accuracy but far more better in generalization. We also
+This project is studying the question of when a single hidden layer Neural Network is better than linear softmax regression model and when additional complexity is unnecessary. In this work we have implemented both models from scratch using NumPy across 3 different tasks: linearly separable Gaussian task, nonlinear moons task and digits dataset. Results of this experiment suggests that linear models are enough when the data is close to being linearly separated, and hidden layer NN gives an advantage when the boundaries are non-linear. On the digits dataset, we show that NN performs moderately as in accuracy but far more better in generalization. We also
 study optimizer behaviour, capacity effects, and one instructive failure case.
 The conclusion from this work is that complex models should be justified and simple models should be used when possible.
 \end{abstract}
@@ -41,7 +41,7 @@ below by the expected training error, so capacity must be chosen carefully~\cite
 
 It is well known that we can approximate any continuous function with the help of one hidden layer NN, given it has enough neurons (result of the Universal Approximation Theorem)~\cite{cs231n_nn1}. 
 
-This means the question is not "Can a neural network solve this?", it is "Is adding hidden layer really necessary for this dataset?". A more complex model should be justifiable when changing the model, by evidence on held-out data. In our work, we implemented both linear softmax regression model and a one hidden layer Neural Network from scratch in NumPy, tested them on 3 different datasets with varying structures: linearly seperable, nonlinear moons task and MNIST digits dataset. The tests were done on repeated seeds to ensure honest statistics and evidence. 
+This means the question is not "Can a neural network solve this?", it is "Is adding hidden layer really necessary for this dataset?". A more complex model should be justifiable when changing the model, by evidence on held-out data. In our work, we implemented both linear softmax regression model and a one hidden layer Neural Network from scratch in NumPy, tested them on 3 different datasets with varying structures: linearly seperable, nonlinear moons task and digits dataset. The tests were done on repeated seeds to ensure honest statistics and evidence. 
 
 % -----------------------------------------------------------------------
 \section{Background and Mathematical Setup}
@@ -231,7 +231,7 @@ where $\bar{x}$ is the sample mean and $s$ the sample standard deviation across 
 \section{Implementation Sanity Checks}
 % -----------------------------------------------------------------------
 
-To ensure the integrity of our from-scratch NumPy implementation, we conducted several verification checks prior to full-scale training:\begin{itemize}\item \textbf{Loss Decrease Verification:} We trained both the softmax regression and the neural network on a tiny subset of the data. As shown in the supplementary loss plots, the cross-entropy loss strictly and smoothly decreased over the first few batches, confirming that our analytical gradients and parameter update logic were correct.\item \textbf{Probability-Sum Check:} We programmatically verified that the sum of the predicted probabilities across all classes for every input row in our vectorized softmax output exactly equaled $1.0$ (within machine precision).\item \textbf{NaN/Inf Check:} We included assertions during the training loop to catch any numerical instability, ensuring no silent underflows occurred during the exponential operations in the softmax layer.\end{itemize}
+To ensure the integrity of our from-scratch NumPy implementation, we conducted several verification checks prior to full-scale training:\begin{itemize}\item \textbf{Loss Decrease Verification:} We trained both the softmax regression and the neural network on a tiny subset of the data. As shown in the supplementary loss plots, the cross-entropy loss strictly and smoothly decreased over the first few batches, confirming that our analytical gradients and parameter update logic were correct.\item \textbf{Probability-Sum Check:} We programmatically verified that the sum of the predicted probabilities across all classes for every input row in our vectorized softmax output exactly equaled $1.0$ (within machine precision).\item \textbf{NaN/Inf Check:} We included assertions during the training loop to catch any numerical instability, ensuring no silent underflows occurred during the exponential operations in the softmax layer. \item \textbf{Gradient check:} We ran  finite difference gradient checking on both models using a subset of 10 samples, verifying that all analytical gradients matched numerical approximations to within relative error 1e-3. \end{itemize}
 
 \begin{figure}[h]
     \centering
@@ -241,6 +241,8 @@ To ensure the integrity of our from-scratch NumPy implementation, we conducted s
     \caption{Training loss over the first few batches on a tiny subset, confirming that both models update parameters correctly and decrease the loss.}
     \label{fig:sanity_checks}
 \end{figure}
+
+\newpage
 
 % -----------------------------------------------------------------------
 \section{Experiments}
@@ -310,6 +312,7 @@ To ensure the integrity of our from-scratch NumPy implementation, we conducted s
     \label{fig:repeated_seeds}
 \end{figure}
 
+\newpage
 % -----------------------------------------------------------------------
 \section{Advanced Track: Prediction Confidence and Reliability}% -----------------------------------------------------------------------
 
@@ -322,6 +325,7 @@ We analyzed the reliability of both architectures (Softmax and NN) with reliabil
     \label{fig:reliability}
 \end{figure}
 
+\newpage
 % -----------------------------------------------------------------------
 \section{Discussion}
 Concluding from our experiment, we can answer the following questions:\begin{enumerate}\item \textbf{When is the linear model sufficient?} The linear model is best for tasks where the dataset is linearly seperable or when the well-calibrated probabilities are priority instead of raw accuracy. the linear model will be insufficient when the geometry of the data is not linear, like as in moons task.\item \textbf{Representational change of the hidden layer:} The hidden layer with non-linear activation function, takes a non-linear input space and applies a non-linear transformation (such as warping, twisting and bending). Then, a simple hyperplane easily seperates the classes in the new space. After projecting it back to the initial input space, we get a curve as a boundary between classes.\item \textbf{When does complexity fail to justify itself?} Additional complexity worsens the model when the capacity of the model exceeds the dataset's capacity, where it starts to overfit the data by just learning the noise. In our experiment, Gaussian task was clearly giving better results with simple linear model, on the contrary different number of hidden units gave varied results in the moon task (e.g., $h=32$ was overfit for the dataset and $h=8$ gave the best results on the moons task).\item \textbf{Lessons from the failure case:} The $h=2$ case on the moons task showed that, not enough capacity for the neural network will not outperform the simple linear model, since it lacks the capacity to fit to the complexity of the dataset.\item \textbf{Value of repeated-seed statistics:} Since Neural Networks are highly non-convex, some initializations of weights and biases could get 'lucky' and land on very good local minimum. To exclude the luck from the architecture we run the model in distinct seeds and calculate mean and confidence interval to prove the Neural Network's superiority across different initializations.\end{enumerate}
