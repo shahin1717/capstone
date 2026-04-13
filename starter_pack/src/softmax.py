@@ -28,5 +28,5 @@ class SoftmaxRegression:
         P = self(X)
         return np.argmax(P.data, axis=1)
 
-    def parameters(self):
+    def parameters(self):  #parameters method to return the model's parameters for optimization
         return [self.W, self.b]
